@@ -1,0 +1,525 @@
+<title>DZ COD Profit Simulator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: sticky inputs column beside a results workspace with tabs; one column on phones. */
+:root{
+  --bg:#f3f6f3; --surface:#ffffff; --surface-2:#e9efea; --ink:#12201b; --ink-2:#46564f; --ink-3:#6c7b74; --line:#d3dcd5;
+  --accent:#0e5e6f; --accent-ink:#ffffff; --good:#1a7f37; --warn:#a96a00; --bad:#c62f2f;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300;
+  --f-body:"IBM Plex Sans","IBM Plex Sans Arabic",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1715; --surface:#16211e; --surface-2:#1e2b27; --ink:#e7efeb; --ink-2:#b0beb7; --ink-3:#85948d; --line:#2b3b36;
+  --accent:#5fc4d6; --accent-ink:#082a31; --good:#4cc275; --warn:#e0a63a; --bad:#ef6b6b;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1715; --surface:#16211e; --surface-2:#1e2b27; --ink:#e7efeb; --ink-2:#b0beb7; --ink-3:#85948d; --line:#2b3b36;
+  --accent:#5fc4d6; --accent-ink:#082a31; --good:#4cc275; --warn:#e0a63a; --bad:#ef6b6b;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.45;
+  padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.app{max-width:1240px;margin:0 auto}
+.num,.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+header.top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between;margin-bottom:18px}
+h1{font-size:24px;line-height:1.15;margin:0;font-weight:600;letter-spacing:-.01em;text-wrap:balance}
+.sub{color:var(--ink-2);margin:4px 0 0;max-width:60ch}
+.lang{display:flex;gap:4px;background:var(--surface-2);padding:3px;border-radius:8px}
+.lang button{border:0;background:transparent;color:var(--ink-2);padding:6px 12px;border-radius:6px;font:inherit;font-weight:500;cursor:pointer}
+.lang button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 0 0 1px var(--line)}
+.grid{display:grid;grid-template-columns:minmax(0,360px) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.inputs{padding:4px 16px 16px;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}
+@media (max-width:900px){.inputs{position:static;max-height:none}}
+.inputs h2{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);margin:18px 0 8px;font-weight:600}
+.f{display:grid;grid-template-columns:minmax(0,1fr) 112px;gap:6px 10px;align-items:center;margin-bottom:8px}
+.f label{color:var(--ink-2);font-size:13px}
+.f small{display:block;color:var(--ink-3);font-size:11px;line-height:1.3}
+input[type=number],input[type=text],textarea,select{width:100%;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:7px 8px;font:inherit;font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:end;direction:ltr}
+input[type=text]{text-align:start;font-family:var(--f-body)}
+textarea{text-align:start;font-size:12px;min-height:90px}
+input:focus-visible,button:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.hint{color:var(--accent);background:none;border:0;padding:0;font:inherit;font-size:12px;cursor:pointer;text-decoration:underline}
+.tabs{display:flex;gap:2px;overflow-x:auto;border-bottom:1px solid var(--line);margin-bottom:16px}
+.tabs button{flex:none;border:0;background:transparent;color:var(--ink-2);padding:10px 14px;font:inherit;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.verdict{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 16px;align-items:center;padding:16px;border-radius:10px;border:1px solid var(--line);background:var(--surface);margin-bottom:12px;border-inline-start:6px solid var(--ink-3)}
+.verdict.GO{border-inline-start-color:var(--good)} .verdict.TEST{border-inline-start-color:var(--warn)} .verdict.SKIP{border-inline-start-color:var(--bad)}
+.vtag{font-weight:600;font-size:20px;letter-spacing:.02em}
+.GO .vtag{color:var(--good)} .TEST .vtag{color:var(--warn)} .SKIP .vtag{color:var(--bad)}
+.vtxt{color:var(--ink-2)}
+.chips{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{font-size:12px;padding:3px 9px;border-radius:99px;border:1px solid var(--line);background:var(--bg);color:var(--ink-2)}
+.chip.good::before{content:"\2713  ";color:var(--good)} .chip.warn::before{content:"! ";color:var(--warn);font-weight:700} .chip.bad::before{content:"\00d7  ";color:var(--bad);font-weight:700}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;min-width:0}
+.kpi .l{color:var(--ink-3);font-size:12px}
+.kpi .v{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:22px;font-weight:500;margin-top:2px;overflow-wrap:anywhere}
+.kpi .v.neg{color:var(--bad)} .kpi .n{color:var(--ink-3);font-size:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:12px;min-width:0}
+.card h3{margin:0 0 12px;font-size:14px;font-weight:600}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.two>.card{margin-bottom:0}
+.be{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.be div{min-width:0} .be .l{color:var(--ink-3);font-size:12px} .be .v{font-family:var(--f-mono);font-size:18px;font-variant-numeric:tabular-nums} .be .n{font-size:12px;color:var(--ink-2)}
+.stack{display:flex;height:34px;border-radius:6px;overflow:hidden;background:var(--surface-2);gap:2px}
+.stack i{display:block;height:100%;min-width:2px}
+.legend{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:6px 10px;align-items:center;margin-top:14px;font-size:13px}
+.legend .sw{width:10px;height:10px;border-radius:2px}
+.legend .pc{color:var(--ink-3);font-family:var(--f-mono);font-size:12px}
+.legend .tot{border-top:1px solid var(--line);padding-top:6px;font-weight:600}
+.val{font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:end;direction:ltr;unicode-bidi:isolate}
+.fun{display:grid;grid-template-columns:110px minmax(0,1fr) 64px;gap:8px 10px;align-items:center;font-size:13px}
+.fun .bar{height:18px;background:var(--surface-2);border-radius:4px;overflow:hidden}
+.fun .bar i{display:block;height:100%;border-radius:0 4px 4px 0}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px 10px;text-align:start;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--ink-3);font-weight:500;font-size:12px}
+td.val,th.val{text-align:end}
+tr.best td{background:color-mix(in srgb,var(--good) 12%,var(--surface))}
+.heat td{text-align:center;font-family:var(--f-mono);font-variant-numeric:tabular-nums;border:2px solid var(--surface);padding:9px 6px}
+.heat td.cur{outline:2px solid var(--ink);outline-offset:-2px}
+.heat th{text-align:center}
+.btn{background:var(--accent);color:var(--accent-ink);border:0;border-radius:6px;padding:8px 14px;font:inherit;font-weight:500;cursor:pointer}
+.btn.sec{background:var(--surface-2);color:var(--ink)}
+.btn.sm{padding:4px 10px;font-size:12px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.note{color:var(--ink-3);font-size:12px;margin:10px 0 0}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-inline-end:6px}
+.dot.GO{background:var(--good)} .dot.TEST{background:var(--warn)} .dot.SKIP{background:var(--bad)}
+.toast{position:fixed;inset-inline:0;bottom:calc(16px + env(safe-area-inset-bottom,0px));margin:0 auto;width:max-content;max-width:90%;background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:13px}
+.big{font-family:var(--f-mono);font-size:26px;font-variant-numeric:tabular-nums}
+.hist{position:relative;display:flex;align-items:flex-end;gap:2px;height:150px;border-bottom:1px solid var(--line)}
+.hist i{flex:1;display:block;min-height:1px;border-radius:2px 2px 0 0}
+.hist u{position:absolute;top:0;bottom:0;width:0;border-inline-start:2px dashed var(--ink);text-decoration:none}
+.axis{display:flex;justify-content:space-between;color:var(--ink-3);font-size:11px;font-family:var(--f-mono);margin-top:4px}
+@media print{.inputs,.tabs,.lang,header .row button,.toast{display:none!important}.grid{display:block}body{background:#fff}}
+@media (prefers-reduced-motion:no-preference){.stack i{transition:width .25s ease}}
+</style>
+<div class="app" id="app">
+<header class="top"><div><h1>DZ COD Profit Simulator</h1><p class="sub" data-i="sub"></p></div>
+<div class="row"><button class="btn sec sm" id="btnTheme" aria-label="Theme" data-i="theme"></button><button class="btn sec sm" id="btnShare" data-i="share"></button><button class="btn sec sm" id="btnPrint" data-i="print"></button><div class="lang" role="group" aria-label="Language"><button data-l="en" aria-pressed="true">English</button><button data-l="fr" aria-pressed="false">Français</button><button data-l="ar" aria-pressed="false">العربية</button></div></div></header>
+<div class="grid"><aside class="panel inputs" id="inputs"></aside>
+<main style="min-width:0"><div class="tabs" id="tabs" role="tablist"></div><div id="view"></div></main></div>
+<div class="toast" id="toast" hidden></div></div>
+<script>
+//MODEL_START
+// All money in DZD unless noted. Rates are fractions (0.65 = 65%).
+function model(p){
+  var u = p.units || 1, uc = (p.cost + p.pack) * u;
+  var D = p.target, C = D / p.dr, L = C / p.cr, R = C - D;
+  var ads = L * p.cpo * p.rate, cc = C * p.cc, cogs = D * uc, lost = R * p.dmg * uc;
+  var ret = R * p.ret, cour = D * p.courier, cod = D * p.price * p.cod, tax = D * p.price * (p.tax || 0);
+  var rev = D * p.price, costs = ads + cc + cogs + lost + ret + cour + cod + tax, net = rev - costs;
+  var maxAds = net + ads;
+  return {u:u, uc:uc, D:D, C:C, L:L, R:R, ads:ads, cc:cc, cogs:cogs, lost:lost, ret:ret, cour:cour, cod:cod, tax:tax,
+    rev:rev, costs:costs, net:net, perOrder: net / D, roi: costs > 0 ? net / costs : 0, margin: rev > 0 ? net / rev : 0,
+    roas: ads > 0 ? rev / ads : 0, maxAds: maxAds, beRoas: maxAds > 0 ? rev / maxAds : Infinity,
+    maxCpo: maxAds / (L * p.rate), capital: ads + cc + C * uc, netPerLead: net / L};
+}
+function solveRate(p, key){ // break-even confirmation or delivery rate (null = unreachable)
+  function netAt(x){ var q = Object.assign({}, p); q[key] = x; return model(q).net; }
+  if (netAt(1) < 0) return null;
+  if (netAt(0.01) >= 0) return 0.01;
+  var lo = 0.01, hi = 1;
+  for (var i = 0; i < 60; i++){ var m = (lo + hi) / 2; if (netAt(m) >= 0) hi = m; else lo = m; }
+  return hi;
+}
+function clamp(x, a, b){ return Math.min(b, Math.max(a, x)); }
+function scenario(p, name){
+  var q = Object.assign({}, p);
+  if (name === 'pess'){ q.cr = clamp(p.cr - 0.10, 0.05, 1); q.dr = clamp(p.dr - 0.10, 0.05, 1); q.cpo = p.cpo * 1.3; }
+  if (name === 'opt'){ q.cr = clamp(p.cr + 0.05, 0.05, 1); q.dr = clamp(p.dr + 0.05, 0.05, 1); q.cpo = p.cpo * 0.85; }
+  return q;
+}
+function landed(l, rate){
+  var goods = l.cny * l.cnyusd, agent = goods * l.agent / 100, freight = l.kg * l.fr, duty = (goods + freight) * l.duty / 100;
+  var usd = goods + agent + freight + duty, fixed = (l.clear + l.local) / l.qty;
+  return {goods: goods * rate, agent: agent * rate, freight: freight * rate, duty: duty * rate, fixed: fixed, total: usd * rate + fixed};
+}
+function verdict(p, m){
+  var pess = model(scenario(p, 'pess'));
+  var v = 'SKIP';
+  if (m.perOrder >= p.minp && m.roi >= 0.4 && pess.net > 0) v = 'GO';
+  else if (m.net > 0 && (m.perOrder >= p.minp * 0.5 || m.roi >= 0.2)) v = 'TEST';
+  return {v: v, pess: pess};
+}
+
+function adFunnel(a, maxCpo){
+  var cpc = a.cpm / (1000 * a.ctr / 100), cpo = cpc / (a.cvr / 100);
+  return {cpc: cpc, cpo: cpo, visitors: 100 / a.cvr, needCvr: maxCpo > 0 ? cpc / maxCpo * 100 : null};
+}
+function zoneCalc(p, z){ // z: [[share,dr,ret] x3] with percentages
+  var sh = 0, dw = 0, rn = 0, rd = 0, res = [];
+  z.forEach(function(r){ var s = r[0], d = r[1] / 100; sh += s; dw += s * d; rn += s * (1 - d) * r[2]; rd += s * (1 - d);
+    var q = Object.assign({}, p, {dr: clamp(d, 0.01, 1), ret: r[2]}); res.push(model(q)); });
+  return {dr: sh > 0 ? dw / sh : 0, ret: rd > 0 ? rn / rd : 0, zones: res};
+}
+function priceLab(p, budget, e, drop){
+  var out = [], best = 0;
+  for (var i = 0; i <= 10; i++){ var f = 0.6 + i * 0.1, st = (f - 1) / 0.1 * drop / 100, q = Object.assign({}, p, {price: p.price * f, cpo: p.cpo * Math.pow(f, e), cr: clamp(p.cr - st, 0.05, 1), dr: clamp(p.dr - st / 2, 0.05, 1)});
+    var m = model(q), dpd = budget / q.cpo * q.cr * q.dr; out.push({f: f, price: q.price, cpo: q.cpo, perOrder: m.perOrder, day: dpd * m.perOrder});
+    if (out[i].day > out[best].day) best = i; }
+  return {rows: out, best: best};
+}
+function cashFlow(p, o){ // o: budget, delay, stockDays, fixed ; 60 days
+  var N = 60, cum = [], flow = new Array(N + o.delay + 2).fill(0), m1 = model(Object.assign({}, p, {target: 1}));
+  var uc = (p.cost + p.pack), leads = o.budget / p.cpo, conf = leads * p.cr, del = conf * p.dr, ret = conf - del;
+  var cogsDay = del * uc + ret * p.dmg * uc, net1 = p.price - p.courier - p.price * p.cod - p.price * (p.tax || 0);
+  flow[0] -= cogsDay * o.stockDays;
+  for (var d = 1; d <= N; d++){
+    flow[d] -= o.budget * p.rate + conf * p.cc + o.fixed / 30;
+    if (d > o.stockDays) flow[d] -= cogsDay;
+    var t = d + o.delay; flow[t] += del * net1 - ret * p.ret;
+  }
+  var c = 0, min = 0, minDay = 0;
+  for (var k = 0; k <= N; k++){ c += flow[k]; cum.push(c); if (c < min){ min = c; minDay = k; } }
+  var be = null; for (var j = minDay; j <= N; j++){ if (cum[j] >= 0){ be = j; break; } }
+  if (min === 0) be = 0;
+  return {cum: cum, peak: -min, be: be, end: cum[N], minDay: minDay};
+}
+function rng(seed){ return function(){ seed |= 0; seed = seed + 0x6D2B79F5 | 0; var t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function tri(r, a, m, b){ var u = r(), c = (m - a) / (b - a || 1); return u < c ? a + Math.sqrt(u * (b - a) * (m - a)) : b - Math.sqrt((1 - u) * (b - a) * (b - m)); }
+function monteCarlo(p, o, N){ // o: cr (pts), dr (pts), lo, hi
+  var r = rng(20260101), vals = [], nets = [];
+  for (var i = 0; i < N; i++){
+    var q = Object.assign({}, p);
+    q.cr = clamp(tri(r, p.cr - o.cr / 100, p.cr, p.cr + o.cr / 100 * 0.6), 0.05, 1);
+    q.dr = clamp(tri(r, p.dr - o.dr / 100, p.dr, p.dr + o.dr / 100 * 0.6), 0.05, 1);
+    q.cpo = tri(r, p.cpo * o.lo, p.cpo, p.cpo * o.hi);
+    q.cost = tri(r, p.cost * 0.95, p.cost, p.cost * 1.15);
+    var m = model(q); vals.push(m.perOrder); nets.push(m.net);
+  }
+  var s = vals.slice().sort(function(a, b){ return a - b; });
+  function pct(x){ return s[Math.min(N - 1, Math.floor(x * N))]; }
+  var mean = vals.reduce(function(a, b){ return a + b; }, 0) / N, nmean = nets.reduce(function(a, b){ return a + b; }, 0) / N;
+  return {vals: vals, pProfit: vals.filter(function(v){ return v > 0; }).length / N, pMin: vals.filter(function(v){ return v >= p.minp; }).length / N,
+    mean: mean, nmean: nmean, p5: pct(0.05), p10: pct(0.1), p50: pct(0.5), p90: pct(0.9), lo: pct(0.01), hi: pct(0.99)};
+}
+function monthly(p, budget, fixed, rep, repn, infl){
+  var m = model(p), dpd = budget / p.cpo * p.cr * p.dr, k = dpd * 30 / m.D;
+  var ro = model(Object.assign({}, p, {cpo: 0})).perOrder, extra = rep / 100 * repn * ro;
+  var gross = m.net * k, repProfit = dpd * 30 * extra;
+  var ladder = [20, 50, 100, 200, 500, 1000].map(function(b){ var q = Object.assign({}, p, {cpo: p.cpo * Math.pow(1 + infl / 100, Math.log(b / budget) / Math.LN2)});
+    var mm = model(q), dd = b / q.cpo * q.cr * q.dr; return {b: b, cpo: q.cpo, profit: dd * mm.perOrder * 30}; });
+  return {m: m, k: k, dpd: dpd, gross: gross, fixed: fixed, repProfit: repProfit, net: gross - fixed + repProfit,
+    beOrders: m.perOrder > 0 ? fixed / m.perOrder : null, extra: extra, ltv: m.perOrder + extra,
+    maxCpoLtv: (m.maxAds + extra * m.D) / (m.L * p.rate), ladder: ladder};
+}
+//MODEL_END
+var I={
+en:{sub:"Check a Cash-on-Delivery product before you spend on ads. Change the inputs and every number updates.",
+t_over:"Overview",t_land:"Landed cost",t_scen:"Scenarios",t_sens:"Sensitivity",t_bund:"Bundles",t_test:"Test plan",t_save:"Saved",
+g_prod:"Product",g_ops:"Operations",g_camp:"Campaign",g_goal:"Goal",
+name:"Product name",price:"Selling price (DZD)",cost:"Product cost, landed (DZD)",pack:"Packaging (DZD)",
+cc:"Call center fee per confirmed order (DZD)",courier:"Courier fee paid by you per delivered parcel (DZD)",courier_h:"0 if the customer pays delivery on top of the price",
+ret:"Return fee per returned parcel (DZD)",cod:"COD collection fee (% of price)",dmg:"Returns lost or damaged (%)",
+cpo:"Cost per order placed (USD)",rate:"Exchange rate (1 USD = DZD)",cr:"Confirmation rate (%)",dr:"Delivery rate of confirmed orders (%)",budget:"Daily ad budget (USD)",
+target:"Target delivered orders",minp:"Minimum profit per order (DZD)",calc_land:"Calculate landed cost",
+GO:"GO",TEST:"TEST",SKIP:"SKIP",
+v_GO:"Strong numbers. Test it now with a small budget.",v_TEST:"Profitable but thin. Test small and watch the numbers closely.",v_SKIP:"Does not pay after returns and ads. Change the price, cost or offer first.",
+r_head:"Ad cost can rise {0}% before you lose money",r_tight:"Only {0}% room before ad cost wipes out profit",r_loss:"Loses money at current ad cost",
+r_pess:"Still profitable in the pessimistic scenario",r_pessb:"Loses money in the pessimistic scenario",r_dr:"Delivery rate under 60%: returns hurt",r_cost:"Product cost is {0}% of the price (aim under 40%)",r_minp:"Profit per order is under your minimum",r_roi:"ROI {0}%",
+k_net:"Net profit",k_unit:"Profit per delivered order",k_roi:"ROI",k_margin:"Net margin",k_from:"From {0} delivered orders",k_cap:"Cash tied up",k_cap_n:"Ads + call center + stock shipped",
+be_t:"Break-even points",be_cpo:"Max cost per order",be_cpo_n:"Now {0}",be_dr:"Min delivery rate",be_cr:"Min confirmation rate",be_roas:"Break-even ROAS",be_roas_n:"Now {0}x",be_no:"Not reachable",
+fun_t:"Order funnel",f_leads:"Orders placed",f_conf:"Confirmed",f_del:"Delivered",f_ret:"Returned",
+cb_t:"Where the sale price goes",c_ads:"Ads",c_prod:"Product + packaging",c_cc:"Call center",c_ret:"Returns (fees + losses)",c_ship:"Courier + COD fee",c_profit:"Profit",c_loss:"Loss",c_total:"Revenue",c_cost:"Total costs",
+proj_t:"Daily projection at your ad budget",p_leads:"Orders placed / day",p_del:"Delivered / day",p_day:"Profit / day",p_month:"Profit / 30 days",
+ops_t:"Operations",o_conf:"Orders to ship (confirmed)",o_ret:"Expected returns",
+ld_t:"Landed cost calculator (China to Algeria)",ld_cny:"Supplier price per unit (CNY)",ld_qty:"Units in the shipment",ld_kg:"Weight per unit (kg)",ld_cnyusd:"1 CNY = USD",ld_fr:"Freight (USD per kg)",ld_agent:"Agent / inspection fee (%)",ld_duty:"Customs and taxes (% of goods + freight)",ld_clear:"Clearance and misc. for the shipment (DZD)",ld_local:"Local transport to your stock (DZD)",
+ld_goods:"Goods",ld_agentr:"Agent fee",ld_freight:"Freight",ld_duty_r:"Customs and taxes",ld_fixed:"Fixed costs per unit",ld_total:"Landed cost per unit",ld_use:"Use as product cost",ld_ratio:"Landed cost is {0}% of the selling price",ld_n:"Duty rates, freight and fees are editable estimates. Replace them with your supplier and forwarder quotes.",
+sc_t:"Three outcomes",sc_pess:"Pessimistic",sc_base:"Base",sc_opt:"Optimistic",sc_d:"Pessimistic: confirmation -10 pts, delivery -10 pts, cost per order +30%. Optimistic: +5 pts, +5 pts, -15%.",
+sc_cr:"Confirmation",sc_dr:"Delivery",sc_cpo:"Cost per order",
+se_t:"Profit per delivered order (DZD)",se_d:"Rows: delivery rate. Columns: cost per order (USD). Outlined cell is closest to your current inputs.",se_dr:"Delivery rate",
+bu_t:"Bundle offers",bu_pieces:"Pieces",bu_price:"Price (DZD)",bu_perorder:"Profit / delivered order",bu_per100:"Profit per 100 orders placed",bu_best:"Best",bu_d:"Same funnel and ad cost for every offer. Bundles raise the order value while ad, call center and courier costs stay the same.",
+te_t:"Test plan",te_budget:"Test budget (USD)",te_leads:"Orders placed",te_conf:"Confirmed",te_del:"Delivered",te_net:"Expected profit or loss",te_ten:"Cost to reach 10 delivered orders",te_kill:"Kill line: stop if your cost per order stays above {0}",te_kill2:"Judge only after at least 20 orders placed. Below that the data is noise.",
+sv_t:"Saved products",sv_save:"Save current",sv_empty:"Nothing saved yet. Save a product to compare it with others.",sv_load:"Load",sv_del:"Delete",sv_csv:"Copy as CSV",sv_sum:"Copy summary",sv_json:"Copy inputs (JSON)",sv_imp:"Load from JSON",sv_paste:"Paste inputs here, for example from l7assba",sv_done:"Copied",sv_bad:"Could not read that JSON",sv_saved:"Saved",
+th_name:"Product",th_price:"Price",th_unit:"Per order",th_roi:"ROI",th_v:"Verdict",unit:"DA",orders:"orders"},
+fr:{sub:"Vérifiez un produit en paiement à la livraison avant de dépenser en publicité. Modifiez les champs à gauche, tout se recalcule.",
+t_over:"Résumé",t_land:"Coût de revient",t_scen:"Scénarios",t_sens:"Sensibilité",t_bund:"Packs",t_test:"Plan de test",t_save:"Sauvegardés",
+g_prod:"Produit",g_ops:"Opérations",g_camp:"Campagne",g_goal:"Objectif",
+name:"Nom du produit",price:"Prix de vente (DZD)",cost:"Coût produit, rendu (DZD)",pack:"Emballage (DZD)",
+cc:"Frais call center par commande confirmée (DZD)",courier:"Frais livreur à votre charge par colis livré (DZD)",courier_h:"0 si le client paie la livraison en plus du prix",
+ret:"Frais par colis retourné (DZD)",cod:"Frais d'encaissement COD (% du prix)",dmg:"Retours perdus ou abîmés (%)",
+cpo:"Coût par commande passée (USD)",rate:"Taux de change (1 USD = DZD)",cr:"Taux de confirmation (%)",dr:"Taux de livraison des commandes confirmées (%)",budget:"Budget pub quotidien (USD)",
+target:"Commandes livrées visées",minp:"Profit minimum par commande (DZD)",calc_land:"Calculer le coût de revient",
+GO:"GO",TEST:"TEST",SKIP:"ABANDON",
+v_GO:"Chiffres solides. Testez maintenant avec un petit budget.",v_TEST:"Rentable mais juste. Testez petit et surveillez les chiffres.",v_SKIP:"Pas rentable après retours et pub. Revoyez prix, coût ou offre.",
+r_head:"Le coût pub peut monter de {0}% avant de perdre de l'argent",r_tight:"Seulement {0}% de marge avant que la pub efface le profit",r_loss:"Perte au coût pub actuel",
+r_pess:"Toujours rentable en scénario pessimiste",r_pessb:"Perte en scénario pessimiste",r_dr:"Livraison sous 60% : les retours pèsent",r_cost:"Le coût produit est {0}% du prix (visez moins de 40%)",r_minp:"Profit par commande sous votre minimum",r_roi:"ROI {0}%",
+k_net:"Profit net",k_unit:"Profit par commande livrée",k_roi:"ROI",k_margin:"Marge nette",k_from:"Sur {0} commandes livrées",k_cap:"Trésorerie immobilisée",k_cap_n:"Pub + call center + stock expédié",
+be_t:"Seuils de rentabilité",be_cpo:"Coût max par commande",be_cpo_n:"Actuel {0}",be_dr:"Taux de livraison min",be_cr:"Taux de confirmation min",be_roas:"ROAS de rentabilité",be_roas_n:"Actuel {0}x",be_no:"Hors d'atteinte",
+fun_t:"Entonnoir des commandes",f_leads:"Commandes passées",f_conf:"Confirmées",f_del:"Livrées",f_ret:"Retournées",
+cb_t:"Où va le prix de vente",c_ads:"Publicité",c_prod:"Produit + emballage",c_cc:"Call center",c_ret:"Retours (frais + pertes)",c_ship:"Livreur + frais COD",c_profit:"Profit",c_loss:"Perte",c_total:"Chiffre d'affaires",c_cost:"Total des coûts",
+proj_t:"Projection quotidienne à votre budget pub",p_leads:"Commandes passées / jour",p_del:"Livrées / jour",p_day:"Profit / jour",p_month:"Profit / 30 jours",
+ops_t:"Opérations",o_conf:"Commandes à expédier (confirmées)",o_ret:"Retours attendus",
+ld_t:"Calculateur de coût de revient (Chine vers Algérie)",ld_cny:"Prix fournisseur par unité (CNY)",ld_qty:"Unités dans l'envoi",ld_kg:"Poids par unité (kg)",ld_cnyusd:"1 CNY = USD",ld_fr:"Fret (USD par kg)",ld_agent:"Frais d'agent / inspection (%)",ld_duty:"Douane et taxes (% marchandise + fret)",ld_clear:"Dédouanement et divers pour l'envoi (DZD)",ld_local:"Transport local vers votre stock (DZD)",
+ld_goods:"Marchandise",ld_agentr:"Frais d'agent",ld_freight:"Fret",ld_duty_r:"Douane et taxes",ld_fixed:"Frais fixes par unité",ld_total:"Coût de revient par unité",ld_use:"Utiliser comme coût produit",ld_ratio:"Le coût de revient est {0}% du prix de vente",ld_n:"Droits, fret et frais sont des estimations modifiables. Remplacez-les par les devis de votre fournisseur et transitaire.",
+sc_t:"Trois issues",sc_pess:"Pessimiste",sc_base:"Base",sc_opt:"Optimiste",sc_d:"Pessimiste : confirmation -10 pts, livraison -10 pts, coût par commande +30%. Optimiste : +5 pts, +5 pts, -15%.",
+sc_cr:"Confirmation",sc_dr:"Livraison",sc_cpo:"Coût par commande",
+se_t:"Profit par commande livrée (DZD)",se_d:"Lignes : taux de livraison. Colonnes : coût par commande (USD). La case entourée est la plus proche de vos valeurs.",se_dr:"Taux de livraison",
+bu_t:"Offres en pack",bu_pieces:"Pièces",bu_price:"Prix (DZD)",bu_perorder:"Profit / commande livrée",bu_per100:"Profit pour 100 commandes passées",bu_best:"Meilleur",bu_d:"Même entonnoir et même coût pub pour chaque offre. Le pack augmente la valeur de la commande, la pub, le call center et le livreur restent les mêmes.",
+te_t:"Plan de test",te_budget:"Budget de test (USD)",te_leads:"Commandes passées",te_conf:"Confirmées",te_del:"Livrées",te_net:"Profit ou perte attendu",te_ten:"Coût pour atteindre 10 commandes livrées",te_kill:"Seuil d'arrêt : stoppez si le coût par commande reste au-dessus de {0}",te_kill2:"Jugez seulement après au moins 20 commandes passées. En dessous, les données sont du bruit.",
+sv_t:"Produits sauvegardés",sv_save:"Sauvegarder",sv_empty:"Rien de sauvegardé. Sauvegardez un produit pour le comparer.",sv_load:"Charger",sv_del:"Supprimer",sv_csv:"Copier en CSV",sv_sum:"Copier le résumé",sv_json:"Copier les valeurs (JSON)",sv_imp:"Charger depuis JSON",sv_paste:"Collez les valeurs ici, par exemple venant de l7assba",sv_done:"Copié",sv_bad:"JSON illisible",sv_saved:"Sauvegardé",
+th_name:"Produit",th_price:"Prix",th_unit:"Par commande",th_roi:"ROI",th_v:"Verdict",unit:"DA",orders:"commandes"},
+ar:{sub:"افحص منتج الدفع عند الاستلام قبل أن تصرف على الإعلانات. غيّر الحقول على الجانب وستتحدث كل الأرقام.",
+t_over:"الملخص",t_land:"تكلفة الوصول",t_scen:"السيناريوهات",t_sens:"الحساسية",t_bund:"العروض",t_test:"خطة التجربة",t_save:"المحفوظة",
+g_prod:"المنتج",g_ops:"العمليات",g_camp:"الحملة",g_goal:"الهدف",
+name:"اسم المنتج",price:"سعر البيع (دج)",cost:"تكلفة المنتج واصلاً (دج)",pack:"التغليف (دج)",
+cc:"أجر مركز الاتصال لكل طلب مؤكد (دج)",courier:"أجر التوصيل عليك لكل طرد مسلّم (دج)",courier_h:"0 إذا كان الزبون يدفع التوصيل فوق السعر",
+ret:"رسوم كل طرد مرتجع (دج)",cod:"عمولة التحصيل COD (% من السعر)",dmg:"المرتجعات التالفة أو الضائعة (%)",
+cpo:"تكلفة الطلب الواحد (دولار)",rate:"سعر الصرف (1 دولار = دج)",cr:"نسبة التأكيد (%)",dr:"نسبة التسليم من الطلبات المؤكدة (%)",budget:"ميزانية الإعلان اليومية (دولار)",
+target:"عدد الطلبات المسلّمة المستهدف",minp:"أدنى ربح لكل طلب (دج)",calc_land:"احسب تكلفة الوصول",
+GO:"انطلق",TEST:"جرّب",SKIP:"اتركه",
+v_GO:"أرقام قوية. جرّبه الآن بميزانية صغيرة.",v_TEST:"مربح لكن هامشه ضيق. جرّب بقدر صغير وراقب الأرقام.",v_SKIP:"لا يربح بعد المرتجعات والإعلانات. غيّر السعر أو التكلفة أو العرض أولاً.",
+r_head:"تكلفة الإعلان تتحمل زيادة {0}% قبل الخسارة",r_tight:"هامش {0}% فقط قبل أن يأكل الإعلان الربح",r_loss:"خسارة عند تكلفة الإعلان الحالية",
+r_pess:"يبقى مربحاً في السيناريو المتشائم",r_pessb:"خسارة في السيناريو المتشائم",r_dr:"التسليم أقل من 60%: المرتجعات تؤلم",r_cost:"تكلفة المنتج {0}% من السعر (الهدف أقل من 40%)",r_minp:"الربح لكل طلب أقل من حدك الأدنى",r_roi:"العائد {0}%",
+k_net:"صافي الربح",k_unit:"الربح لكل طلب مسلّم",k_roi:"العائد على الاستثمار",k_margin:"هامش الربح",k_from:"من {0} طلب مسلّم",k_cap:"رأس مال مجمّد",k_cap_n:"إعلانات + مركز اتصال + سلع مشحونة",
+be_t:"نقاط التعادل",be_cpo:"أقصى تكلفة للطلب",be_cpo_n:"الحالية {0}",be_dr:"أدنى نسبة تسليم",be_cr:"أدنى نسبة تأكيد",be_roas:"ROAS التعادل",be_roas_n:"الحالي {0}x",be_no:"غير ممكن",
+fun_t:"مسار الطلبات",f_leads:"طلبات مسجلة",f_conf:"مؤكدة",f_del:"مسلّمة",f_ret:"مرتجعة",
+cb_t:"أين يذهب سعر البيع",c_ads:"الإعلانات",c_prod:"المنتج + التغليف",c_cc:"مركز الاتصال",c_ret:"المرتجعات (رسوم + خسائر)",c_ship:"التوصيل + عمولة COD",c_profit:"الربح",c_loss:"الخسارة",c_total:"الإيرادات",c_cost:"إجمالي التكاليف",
+proj_t:"توقع يومي بميزانيتك الإعلانية",p_leads:"طلبات مسجلة / يوم",p_del:"مسلّمة / يوم",p_day:"الربح / يوم",p_month:"الربح / 30 يوم",
+ops_t:"العمليات",o_conf:"طلبات للشحن (المؤكدة)",o_ret:"مرتجعات متوقعة",
+ld_t:"حاسبة تكلفة الوصول (من الصين إلى الجزائر)",ld_cny:"سعر المورد للقطعة (يوان)",ld_qty:"عدد القطع في الشحنة",ld_kg:"وزن القطعة (كغ)",ld_cnyusd:"1 يوان = دولار",ld_fr:"الشحن (دولار لكل كغ)",ld_agent:"أجر الوكيل / الفحص (%)",ld_duty:"الجمارك والضرائب (% من البضاعة + الشحن)",ld_clear:"التخليص ومصاريف أخرى للشحنة (دج)",ld_local:"النقل المحلي إلى مخزنك (دج)",
+ld_goods:"البضاعة",ld_agentr:"أجر الوكيل",ld_freight:"الشحن",ld_duty_r:"الجمارك والضرائب",ld_fixed:"مصاريف ثابتة للقطعة",ld_total:"تكلفة الوصول للقطعة",ld_use:"استعملها كتكلفة للمنتج",ld_ratio:"تكلفة الوصول {0}% من سعر البيع",ld_n:"الرسوم والشحن والمصاريف تقديرات قابلة للتعديل. استبدلها بعروض مورّدك وشركة الشحن.",
+sc_t:"ثلاث نتائج محتملة",sc_pess:"متشائم",sc_base:"أساسي",sc_opt:"متفائل",sc_d:"المتشائم: التأكيد -10 نقاط، التسليم -10 نقاط، تكلفة الطلب +30%. المتفائل: +5 نقاط، +5 نقاط، -15%.",
+sc_cr:"التأكيد",sc_dr:"التسليم",sc_cpo:"تكلفة الطلب",
+se_t:"الربح لكل طلب مسلّم (دج)",se_d:"الصفوف: نسبة التسليم. الأعمدة: تكلفة الطلب (دولار). الخلية المؤطرة الأقرب لمدخلاتك.",se_dr:"نسبة التسليم",
+bu_t:"عروض الحزم",bu_pieces:"القطع",bu_price:"السعر (دج)",bu_perorder:"الربح / طلب مسلّم",bu_per100:"الربح لكل 100 طلب مسجل",bu_best:"الأفضل",bu_d:"نفس المسار ونفس تكلفة الإعلان لكل عرض. الحزمة ترفع قيمة الطلب بينما تبقى تكلفة الإعلان والاتصال والتوصيل كما هي.",
+te_t:"خطة التجربة",te_budget:"ميزانية التجربة (دولار)",te_leads:"طلبات مسجلة",te_conf:"مؤكدة",te_del:"مسلّمة",te_net:"الربح أو الخسارة المتوقعة",te_ten:"تكلفة الوصول إلى 10 طلبات مسلّمة",te_kill:"خط الإيقاف: توقف إذا بقيت تكلفة الطلب فوق {0}",te_kill2:"لا تحكم قبل 20 طلباً مسجلاً على الأقل. قبل ذلك البيانات مجرد ضجيج.",
+sv_t:"المنتجات المحفوظة",sv_save:"احفظ الحالي",sv_empty:"لا شيء محفوظ بعد. احفظ منتجاً لمقارنته بغيره.",sv_load:"تحميل",sv_del:"حذف",sv_csv:"نسخ CSV",sv_sum:"نسخ الملخص",sv_json:"نسخ المدخلات (JSON)",sv_imp:"تحميل من JSON",sv_paste:"الصق المدخلات هنا، مثلاً من l7assba",sv_done:"تم النسخ",sv_bad:"تعذرت قراءة JSON",sv_saved:"تم الحفظ",
+th_name:"المنتج",th_price:"السعر",th_unit:"لكل طلب",th_roi:"العائد",th_v:"الحكم",unit:"دج",orders:"طلب"}
+};
+Object.assign(I.en,{t_fun:"Ad funnel",t_zone:"Regions",t_price:"Price lab",t_risk:"Risk",t_cash:"Cash flow",t_month:"Monthly P&L",
+tax:"Other deductions (% of revenue)",r_risk:"{0}% chance of profit across 3,000 random runs",r_risk_b:"Only {0}% chance of profit across 3,000 random runs",
+k_chance:"Chance of profit",k_chance_n:"3,000 random runs",
+fu_t:"Ad funnel: from CPM to cost per order",cpm:"Cost per 1,000 impressions, CPM (USD)",ctr:"Click-through rate (%)",cvr:"Visitor-to-order rate (%)",fu_cpc:"Cost per click",fu_cpo:"Cost per order",fu_vis:"Visitors needed per 5 orders... ",fu_use:"Use as cost per order",
+fu_need:"Visitor-to-order rate needed to break even",fu_have:"Yours",fu_v:"Visitors per order",fu_n:"Defaults are estimates. Read CPM, CTR and the order rate from your ad account and landing page.",
+zn_t:"Regions: delivery rate and returns by zone",z1n:"Major cities",z2n:"Other northern wilayas",z3n:"South and remote",zn_share:"Share of orders (%)",zn_dr:"Delivery rate (%)",zn_ret:"Return fee (DZD)",
+zn_w:"Weighted delivery rate",zn_wr:"Weighted return fee",zn_apply:"Apply to inputs",zn_profit:"Profit per order",zn_ok:"Keep selling",zn_cut:"Loses money: ask for a deposit or skip",zn_thin:"Thin",zn_n:"Defaults are estimates. Use your own courier reports by wilaya.",
+pr_t:"Price lab",elast:"Ad cost rise per +1% price (0 = none, 1 = proportional)",pdrop:"Confirmation drop per +10% price (pts)",pr_price:"Price",pr_cpo:"Cost per order",pr_order:"Profit / delivered order",pr_day:"Profit / day at your budget",pr_best:"Best",
+pr_d:"Raising the price lowers confirmation and raises ad cost per order, so profit per day peaks at one price. Both effects are your own assumptions.",
+rk_t:"Risk: 3,000 random runs",rk_cr:"Confirmation swing (+/- pts)",rk_dr:"Delivery swing (+/- pts)",rk_lo:"Lowest cost per order (x your input)",rk_hi:"Highest cost per order (x your input)",
+rk_p:"Chance of profit",rk_pt:"Chance of reaching your minimum profit",rk_mean:"Average profit per order",rk_p10:"Bad case (10th percentile)",rk_p50:"Typical",rk_p90:"Good case (90th percentile)",rk_net:"Average net profit for your target",rk_hist:"Profit per delivered order across runs",
+rk_d:"Each run draws confirmation, delivery, cost per order and product cost from ranges around your inputs. The same seed is used, so results do not jump between refreshes.",
+ca_t:"Cash flow",delay:"Days until the courier pays you",stockd:"Days of stock bought upfront",ca_peak:"Cash you need at the lowest point",ca_be:"Cash turns positive on day",ca_end:"Cash on day 60",ca_chart:"Cumulative cash, first 60 days (DZD)",ca_day:"Day",ca_never:"Not within 60 days",
+ca_d:"Assumes steady daily orders at your ad budget, ads and call center paid on the day, stock for delivered and lost parcels paid after the upfront stock is used, courier payout and return fees after the delay, fixed costs spread over 30 days.",
+mo_t:"Monthly profit and loss",fixed:"Monthly fixed costs (DZD)",rep:"Customers who reorder (%)",repn:"Reorders per returning customer",infl:"Ad cost rise per doubling of budget (%)",
+mo_gross:"Profit before fixed costs",mo_fixed:"Fixed costs",mo_rep:"Profit from reorders",mo_net:"Net monthly profit",mo_be:"Delivered orders per month to cover fixed costs",mo_ltv:"Profit per customer, with reorders",mo_ltvcpo:"Max cost per order, with reorders",
+mo_scale:"Scaling the daily budget",mo_budget:"Daily budget",mo_cpo:"Cost per order",mo_month:"Profit / month",mo_rows:"Monthly figures at your daily budget",
+mo_d:"Reorders skip the ad cost. Scaling assumes your cost per order rises as the budget doubles.",
+share:"Copy link",print:"Print",copied_link:"Link copied",theme:"Theme",s_chart:"Chart"});
+Object.assign(I.fr,{t_fun:"Entonnoir pub",t_zone:"Régions",t_price:"Labo prix",t_risk:"Risque",t_cash:"Trésorerie",t_month:"Compte mensuel",
+tax:"Autres déductions (% du CA)",r_risk:"{0}% de chances de profit sur 3 000 simulations",r_risk_b:"Seulement {0}% de chances de profit sur 3 000 simulations",
+k_chance:"Chances de profit",k_chance_n:"3 000 simulations",
+fu_t:"Entonnoir pub : du CPM au coût par commande",cpm:"Coût pour 1 000 impressions, CPM (USD)",ctr:"Taux de clic (%)",cvr:"Taux visiteur vers commande (%)",fu_cpc:"Coût par clic",fu_cpo:"Coût par commande",fu_use:"Utiliser comme coût par commande",
+fu_need:"Taux visiteur vers commande nécessaire pour être à l'équilibre",fu_have:"Le vôtre",fu_v:"Visiteurs par commande",fu_n:"Valeurs par défaut estimées. Lisez CPM, CTR et taux de commande dans votre compte pub et votre page.",
+zn_t:"Régions : livraison et retours par zone",z1n:"Grandes villes",z2n:"Autres wilayas du nord",z3n:"Sud et zones éloignées",zn_share:"Part des commandes (%)",zn_dr:"Taux de livraison (%)",zn_ret:"Frais de retour (DZD)",
+zn_w:"Taux de livraison pondéré",zn_wr:"Frais de retour pondérés",zn_apply:"Appliquer aux champs",zn_profit:"Profit par commande",zn_ok:"Continuer",zn_cut:"Perte : demandez un acompte ou ignorez",zn_thin:"Faible",zn_n:"Valeurs estimées. Utilisez vos rapports transporteur par wilaya.",
+pr_t:"Labo prix",elast:"Hausse du coût pub par +1% de prix (0 = aucune, 1 = proportionnelle)",pdrop:"Baisse de confirmation par +10% de prix (pts)",pr_price:"Prix",pr_cpo:"Coût par commande",pr_order:"Profit / commande livrée",pr_day:"Profit / jour à votre budget",pr_best:"Meilleur",
+pr_d:"Monter le prix baisse la confirmation et augmente le coût pub par commande, donc le profit par jour a un pic. Ces deux effets sont vos hypothèses.",
+rk_t:"Risque : 3 000 simulations",rk_cr:"Variation de confirmation (+/- pts)",rk_dr:"Variation de livraison (+/- pts)",rk_lo:"Coût par commande minimum (x votre valeur)",rk_hi:"Coût par commande maximum (x votre valeur)",
+rk_p:"Chances de profit",rk_pt:"Chances d'atteindre votre profit minimum",rk_mean:"Profit moyen par commande",rk_p10:"Mauvais cas (10e centile)",rk_p50:"Typique",rk_p90:"Bon cas (90e centile)",rk_net:"Profit net moyen pour votre objectif",rk_hist:"Profit par commande livrée sur les simulations",
+rk_d:"Chaque simulation tire confirmation, livraison, coût par commande et coût produit dans des plages autour de vos valeurs. La graine est fixe, les résultats ne bougent pas à chaque rafraîchissement.",
+ca_t:"Trésorerie",delay:"Jours avant que le transporteur vous paie",stockd:"Jours de stock achetés d'avance",ca_peak:"Trésorerie nécessaire au plus bas",ca_be:"La trésorerie devient positive au jour",ca_end:"Trésorerie au jour 60",ca_chart:"Trésorerie cumulée, 60 premiers jours (DZD)",ca_day:"Jour",ca_never:"Pas en 60 jours",
+ca_d:"Suppose des commandes quotidiennes stables à votre budget, pub et call center payés le jour même, stock des colis livrés et perdus payé après le stock initial, paiement du transporteur et frais de retour après le délai, frais fixes sur 30 jours.",
+mo_t:"Compte de résultat mensuel",fixed:"Frais fixes mensuels (DZD)",rep:"Clients qui recommandent (%)",repn:"Recommandes par client fidèle",infl:"Hausse du coût pub quand le budget double (%)",
+mo_gross:"Profit avant frais fixes",mo_fixed:"Frais fixes",mo_rep:"Profit des recommandes",mo_net:"Profit net mensuel",mo_be:"Commandes livrées par mois pour couvrir les frais fixes",mo_ltv:"Profit par client, avec recommandes",mo_ltvcpo:"Coût max par commande, avec recommandes",
+mo_scale:"Augmenter le budget quotidien",mo_budget:"Budget quotidien",mo_cpo:"Coût par commande",mo_month:"Profit / mois",mo_rows:"Chiffres mensuels à votre budget quotidien",
+mo_d:"Les recommandes n'ont pas de coût pub. L'augmentation suppose que votre coût par commande monte quand le budget double.",
+share:"Copier le lien",print:"Imprimer",copied_link:"Lien copié",theme:"Thème",s_chart:"Graphique"});
+Object.assign(I.ar,{t_fun:"مسار الإعلان",t_zone:"المناطق",t_price:"مختبر السعر",t_risk:"المخاطر",t_cash:"السيولة",t_month:"الحساب الشهري",
+tax:"خصومات أخرى (% من الإيراد)",r_risk:"احتمال الربح {0}% في 3000 محاكاة عشوائية",r_risk_b:"احتمال الربح {0}% فقط في 3000 محاكاة عشوائية",
+k_chance:"احتمال الربح",k_chance_n:"3000 محاكاة عشوائية",
+fu_t:"مسار الإعلان: من CPM إلى تكلفة الطلب",cpm:"تكلفة 1000 ظهور، CPM (دولار)",ctr:"نسبة النقر (%)",cvr:"نسبة الزائر إلى طلب (%)",fu_cpc:"تكلفة النقرة",fu_cpo:"تكلفة الطلب",fu_use:"استعملها كتكلفة للطلب",
+fu_need:"نسبة الزائر إلى طلب اللازمة للتعادل",fu_have:"نسبتك",fu_v:"زوار لكل طلب",fu_n:"القيم الافتراضية تقديرية. اقرأ CPM وCTR ونسبة الطلب من حسابك الإعلاني وصفحتك.",
+zn_t:"المناطق: التسليم والمرتجعات حسب المنطقة",z1n:"المدن الكبرى",z2n:"ولايات الشمال الأخرى",z3n:"الجنوب والمناطق النائية",zn_share:"حصة الطلبات (%)",zn_dr:"نسبة التسليم (%)",zn_ret:"رسوم الإرجاع (دج)",
+zn_w:"نسبة التسليم المرجّحة",zn_wr:"رسوم الإرجاع المرجّحة",zn_apply:"طبّق على المدخلات",zn_profit:"الربح لكل طلب",zn_ok:"استمر في البيع",zn_cut:"خسارة: اطلب عربوناً أو تجاهلها",zn_thin:"ضعيف",zn_n:"القيم تقديرية. استعمل تقارير شركة التوصيل حسب الولاية.",
+pr_t:"مختبر السعر",elast:"ارتفاع تكلفة الإعلان لكل +1% في السعر (0 = لا شيء، 1 = بالتناسب)",pdrop:"انخفاض التأكيد لكل +10% في السعر (نقاط)",pr_price:"السعر",pr_cpo:"تكلفة الطلب",pr_order:"الربح / طلب مسلّم",pr_day:"الربح / يوم بميزانيتك",pr_best:"الأفضل",
+pr_d:"رفع السعر يخفض التأكيد ويرفع تكلفة الإعلان لكل طلب، لذا يبلغ الربح اليومي ذروته عند سعر واحد. التأثيران من افتراضاتك.",
+rk_t:"المخاطر: 3000 محاكاة عشوائية",rk_cr:"تذبذب التأكيد (+/- نقاط)",rk_dr:"تذبذب التسليم (+/- نقاط)",rk_lo:"أدنى تكلفة للطلب (× مدخلك)",rk_hi:"أعلى تكلفة للطلب (× مدخلك)",
+rk_p:"احتمال الربح",rk_pt:"احتمال بلوغ أدنى ربح تريده",rk_mean:"متوسط الربح لكل طلب",rk_p10:"حالة سيئة (المئين 10)",rk_p50:"المعتاد",rk_p90:"حالة جيدة (المئين 90)",rk_net:"متوسط صافي الربح لهدفك",rk_hist:"الربح لكل طلب مسلّم عبر المحاكاة",
+rk_d:"كل محاكاة تسحب التأكيد والتسليم وتكلفة الطلب وتكلفة المنتج من نطاقات حول مدخلاتك. البذرة ثابتة فلا تتغير النتائج عند كل تحديث.",
+ca_t:"السيولة",delay:"أيام حتى تدفع لك شركة التوصيل",stockd:"أيام من المخزون مشتراة مسبقاً",ca_peak:"السيولة اللازمة عند أدنى نقطة",ca_be:"تصبح السيولة موجبة في اليوم",ca_end:"السيولة في اليوم 60",ca_chart:"السيولة التراكمية، أول 60 يوماً (دج)",ca_day:"اليوم",ca_never:"ليس خلال 60 يوماً",
+ca_d:"يفترض طلبات يومية ثابتة بميزانيتك، والإعلان ومركز الاتصال يُدفعان في اليوم نفسه، وسلع الطرود المسلّمة والضائعة تُدفع بعد نفاد المخزون المسبق، ودفعة التوصيل ورسوم الإرجاع بعد المهلة، والتكاليف الثابتة موزعة على 30 يوماً.",
+mo_t:"الربح والخسارة الشهري",fixed:"التكاليف الثابتة الشهرية (دج)",rep:"الزبائن الذين يعيدون الطلب (%)",repn:"إعادات الطلب لكل زبون عائد",infl:"ارتفاع تكلفة الإعلان عند مضاعفة الميزانية (%)",
+mo_gross:"الربح قبل التكاليف الثابتة",mo_fixed:"التكاليف الثابتة",mo_rep:"ربح إعادة الطلب",mo_net:"صافي الربح الشهري",mo_be:"طلبات مسلّمة شهرياً لتغطية التكاليف الثابتة",mo_ltv:"الربح لكل زبون مع إعادة الطلب",mo_ltvcpo:"أقصى تكلفة للطلب مع إعادة الطلب",
+mo_scale:"رفع الميزانية اليومية",mo_budget:"الميزانية اليومية",mo_cpo:"تكلفة الطلب",mo_month:"الربح / شهر",mo_rows:"أرقام شهرية بميزانيتك اليومية",
+mo_d:"إعادة الطلب بلا تكلفة إعلان. الرفع يفترض أن تكلفة الطلب ترتفع كلما تضاعفت الميزانية.",
+share:"انسخ الرابط",print:"طباعة",copied_link:"تم نسخ الرابط",theme:"المظهر",s_chart:"رسم"});
+I.en.fu_vis="Visitors per order";
+function niceTicks(min,max,n){var span=(max-min)||1,step=Math.pow(10,Math.floor(Math.log10(span/n))),err=span/n/step;step*=err>=7.5?10:err>=3.5?5:err>=1.5?2:1;var t=[];for(var v=Math.ceil(min/step-1e-9)*step;v<=max+1e-9;v+=step)t.push(Math.round(v/step)*step);return t}
+function fmtK(v){var a=Math.abs(v);return a>=1e6?nf(v/1e6,1)+"M":a>=1e3?nf(v/1e3)+"k":nf(v)}
+function lineChart(xs,ys,o){o=o||{};var W=720,H=250,l=56,r=18,t=14,b=30,xmin=xs[0],xmax=xs[xs.length-1];
+ var lo=Math.min(0,Math.min.apply(null,ys)),hi=Math.max(0,Math.max.apply(null,ys)),pad=(hi-lo)*0.06||1;lo-=pad;hi+=pad;
+ function X(x){return l+(x-xmin)/(xmax-xmin||1)*(W-l-r)}function Y(y){return t+(hi-y)/(hi-lo)*(H-t-b)}
+ var yt=niceTicks(lo,hi,5),xt=o.xticks||niceTicks(xmin,xmax,6),g="";
+ yt.forEach(function(v){g+='<line x1="'+l+'" x2="'+(W-r)+'" y1="'+Y(v).toFixed(1)+'" y2="'+Y(v).toFixed(1)+'" stroke="var(--line)" stroke-width="1"/><text x="'+(l-8)+'" y="'+(Y(v)+4).toFixed(1)+'" text-anchor="end" font-size="11" fill="var(--ink-3)">'+fmtK(v)+'</text>'});
+ xt.forEach(function(v){g+='<text x="'+X(v).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle" font-size="11" fill="var(--ink-3)">'+(o.xf?o.xf(v):v)+'</text>'});
+ var d=xs.map(function(x,i){return(i?"L":"M")+X(x).toFixed(1)+" "+Y(ys[i]).toFixed(1)}).join(" ");
+ var m="";if(o.mark!=null){var mx=X(xs[o.mark]),my=Y(ys[o.mark]);m='<circle cx="'+mx.toFixed(1)+'" cy="'+my.toFixed(1)+'" r="5" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"/>'}
+ return'<svg viewBox="0 0 '+W+' '+H+'" width="100%" role="img" aria-label="'+(o.label||"")+'" style="display:block;max-width:100%;height:auto">'+g+'<line x1="'+l+'" x2="'+(W-r)+'" y1="'+Y(0).toFixed(1)+'" y2="'+Y(0).toFixed(1)+'" stroke="var(--ink-3)" stroke-width="1.5" stroke-dasharray="4 3"/><path d="'+d+'" fill="none" stroke="var(--s1)" stroke-width="2" stroke-linejoin="round"/>'+m+'</svg>'}
+function inp(key){var a=key.split("."),val=(a[0]==="S"?S:LD)[a[1]];return'<input id="x_'+a[0]+a[1]+'" data-k="'+key+'" type="number" inputmode="decimal" step="any" min="0" value="'+val+'" style="width:92px">'}
+function kv(l,v,n,col){return'<div><div class="l">'+l+'</div><div class="v"'+(col?' style="color:var('+col+')"':'')+'>'+v+'</div>'+(n?'<div class="n">'+n+'</div>':'')+'</div>'}
+function vFun(){var p=P(),m=model(p),f=adFunnel({cpm:+S.cpm||0.01,ctr:+S.ctr||0.01,cvr:+S.cvr||0.01},m.maxCpo),ok=f.cpo<=m.maxCpo;
+ return'<div class="two"><div class="card"><h3>'+T("fu_t")+'</h3>'+fld("S.cpm","cpm")+fld("S.ctr","ctr")+fld("S.cvr","cvr")+'<p class="note">'+T("fu_n")+'</p></div>'+
+ '<div class="card"><div class="be" style="grid-template-columns:1fr 1fr">'+kv(T("fu_cpc"),"$"+nf(f.cpc,3))+kv(T("fu_cpo"),"$"+nf(f.cpo,2),ok?"":T("r_loss"),ok?"--good":"--bad")+kv(T("fu_v"),nf(f.visitors,0))+kv(T("be_cpo"),m.maxCpo>0?"$"+nf(m.maxCpo,2):"-")+'</div>'+
+ '<p style="margin:16px 0 0">'+T("fu_need")+': <b class="mono">'+(f.needCvr===null?"-":nf(f.needCvr,2)+"%")+'</b> ('+T("fu_have")+' '+nf(+S.cvr,2)+'%)</p><p><button class="btn" id="useCpo">'+T("fu_use")+'</button></p></div></div>'}
+function vZone(){var p=P(),z=[[+S.z1s,+S.z1d,+S.z1r],[+S.z2s,+S.z2d,+S.z2r],[+S.z3s,+S.z3d,+S.z3r]],c=zoneCalc(p,z),rowsH="";
+ [1,2,3].forEach(function(i){rowsH+='<tr><td><b>'+T("z"+i+"n")+'</b></td><td>'+inp("S.z"+i+"s")+'</td><td>'+inp("S.z"+i+"d")+'</td><td>'+inp("S.z"+i+"r")+'</td><td class="val">'+da(c.zones[i-1].perOrder)+'</td><td>'+(c.zones[i-1].perOrder<0?'<span class="chip bad">'+T("zn_cut")+'</span>':c.zones[i-1].perOrder<p.minp?'<span class="chip warn">'+T("zn_thin")+'</span>':'<span class="chip good">'+T("zn_ok")+'</span>')+'</td></tr>'});
+ return'<div class="card"><h3>'+T("zn_t")+'</h3><div class="tw"><table><thead><tr><th></th><th>'+T("zn_share")+'</th><th>'+T("zn_dr")+'</th><th>'+T("zn_ret")+'</th><th class="val">'+T("zn_profit")+'</th><th></th></tr></thead><tbody>'+rowsH+'</tbody></table></div>'+
+ '<div class="be" style="margin-top:14px">'+kv(T("zn_w"),pc(c.dr,1),T("dr").split(" (")[0]+": "+pc(p.dr,0))+kv(T("zn_wr"),da(c.ret))+'</div><p><button class="btn" id="applyZone">'+T("zn_apply")+'</button></p><p class="note">'+T("zn_n")+'</p></div>'}
+function vPrice(){var p=P(),r=priceLab(p,+S.budget,+S.elast,+S.pdrop),b=r.rows[r.best];
+ var h='<div class="two"><div class="card"><h3>'+T("pr_t")+'</h3>'+fld("S.elast","elast","0.1")+fld("S.pdrop","pdrop","0.5")+'<p class="note">'+T("pr_d")+'</p></div><div class="card"><h3>'+T("pr_day")+'</h3>'+
+ lineChart(r.rows.map(function(x){return x.price}),r.rows.map(function(x){return x.day}),{mark:r.best,xticks:r.rows.filter(function(x,i){return i%2===0}).map(function(x){return x.price}),xf:function(v){return nf(v)},label:T("pr_day")})+
+ '<p class="note">'+T("pr_best")+': <b class="mono">'+da(b.price)+'</b></p></div></div>';
+ h+='<div class="card"><div class="tw"><table><thead><tr><th>'+T("pr_price")+'</th><th class="val">'+T("pr_cpo")+'</th><th class="val">'+T("pr_order")+'</th><th class="val">'+T("pr_day")+'</th><th></th></tr></thead><tbody>'+
+ r.rows.map(function(x,i){return'<tr class="'+(i===r.best?"best":"")+'"><td class="mono">'+da(x.price)+(x.price>7000?' <span class="chip warn">&gt;7000</span>':'')+'</td><td class="val">$'+nf(x.cpo,2)+'</td><td class="val">'+da(x.perOrder)+'</td><td class="val">'+da(x.day)+'</td><td>'+(i===r.best?T("pr_best"):"")+'</td></tr>'}).join("")+'</tbody></table></div></div>';
+ return h}
+function mcRun(){var p=P();return monteCarlo(p,{cr:+S.mcCr,dr:+S.mcDr,lo:+S.mcLo,hi:+S.mcHi},3000)}
+function vRisk(){var p=P(),mc=mcRun(),bins=24,lo=mc.lo,hi=mc.hi,w=(hi-lo)/bins||1,c=new Array(bins).fill(0);
+ mc.vals.forEach(function(v){var i=Math.floor((v-lo)/w);if(i>=0&&i<bins)c[i]++;else if(i<0)c[0]++;else c[bins-1]++});var mx=Math.max.apply(null,c)||1,z=(0-lo)/(hi-lo)*100;
+ var hist='<div class="hist" role="img" aria-label="'+T("rk_hist")+'">'+c.map(function(n,i){var mid=lo+(i+.5)*w;return'<i style="height:'+(n/mx*100).toFixed(0)+'%;background:var('+(mid>=0?"--good":"--bad")+')"></i>'}).join("")+(z>0&&z<100?'<u style="inset-inline-start:'+z.toFixed(1)+'%"></u>':'')+'</div><div class="axis"><span>'+da(lo)+'</span><span>0</span><span>'+da(hi)+'</span></div>';
+ return'<div class="two"><div class="card"><h3>'+T("rk_t")+'</h3>'+fld("S.mcCr","rk_cr")+fld("S.mcDr","rk_dr")+fld("S.mcLo","rk_lo","0.05")+fld("S.mcHi","rk_hi","0.05")+'<p class="note">'+T("rk_d")+'</p></div>'+
+ '<div class="card"><div class="be" style="grid-template-columns:1fr 1fr">'+kv(T("rk_p"),pc(mc.pProfit),null,mc.pProfit>=.8?"--good":mc.pProfit>=.6?"--warn":"--bad")+kv(T("rk_pt"),pc(mc.pMin))+kv(T("rk_mean"),da(mc.mean))+kv(T("rk_net"),da(mc.nmean))+kv(T("rk_p10"),da(mc.p10))+kv(T("rk_p50"),da(mc.p50))+kv(T("rk_p90"),da(mc.p90))+'</div></div></div>'+
+ '<div class="card"><h3>'+T("rk_hist")+'</h3>'+hist+'</div>'}
+function vCash(){var p=P(),c=cashFlow(p,{budget:+S.budget,delay:Math.round(+S.delay),stockDays:Math.round(+S.stockd),fixed:+S.fixed}),xs=c.cum.map(function(_,i){return i});
+ return'<div class="two"><div class="card"><h3>'+T("ca_t")+'</h3>'+fld("S.budget","budget")+fld("S.delay","delay")+fld("S.stockd","stockd")+fld("S.fixed","fixed")+'<p class="note">'+T("ca_d")+'</p></div>'+
+ '<div class="card"><div class="be" style="grid-template-columns:1fr">'+kv(T("ca_peak"),da(c.peak),null,"--bad")+kv(T("ca_be"),c.be===null?T("ca_never"):c.be)+kv(T("ca_end"),da(c.end),null,c.end>=0?"--good":"--bad")+'</div></div></div>'+
+ '<div class="card"><h3>'+T("ca_chart")+'</h3>'+lineChart(xs,c.cum,{xticks:[0,10,20,30,40,50,60],label:T("ca_chart")})+'<p class="note">'+T("ca_day")+'</p></div>'}
+function vMonth(){var p=P(),o=monthly(p,+S.budget,+S.fixed,+S.rep,+S.repn,+S.infl),m=o.m,k=o.k;
+ var rows=[["c_total",m.rev*k],["c_ads",-m.ads*k],["c_prod",-m.cogs*k],["c_cc",-m.cc*k],["c_ret",-(m.ret+m.lost)*k],["c_ship",-(m.cour+m.cod+m.tax)*k],["mo_gross",o.gross],["mo_fixed",-o.fixed],["mo_rep",o.repProfit],["mo_net",o.net]];
+ var best=0;o.ladder.forEach(function(x,i){if(x.profit>o.ladder[best].profit)best=i});
+ return'<div class="two"><div class="card"><h3>'+T("mo_t")+'</h3>'+fld("S.budget","budget")+fld("S.fixed","fixed")+fld("S.rep","rep")+fld("S.repn","repn")+fld("S.infl","infl")+'<p class="note">'+T("mo_d")+'</p></div>'+
+ '<div class="card"><h3>'+T("mo_rows")+'</h3><div class="legend" style="grid-template-columns:minmax(0,1fr) auto">'+rows.map(function(r){var b=r[0]==="mo_net"||r[0]==="mo_gross";return'<span>'+(b?'<b>':'')+T(r[0])+(b?'</b>':'')+'</span><span class="val">'+(b?'<b>':'')+da(r[1])+(b?'</b>':'')+'</span>'}).join("")+'</div></div></div>'+
+ '<div class="card"><div class="be">'+kv(T("mo_be"),o.beOrders===null?"-":nf(o.beOrders)+" ")+kv(T("mo_ltv"),da(o.ltv))+kv(T("mo_ltvcpo"),"$"+nf(o.maxCpoLtv,2),T("be_cpo_n","$"+nf(m.maxCpo,2)))+'</div></div>'+
+ '<div class="card"><h3>'+T("mo_scale")+'</h3><div class="tw"><table><thead><tr><th>'+T("mo_budget")+'</th><th class="val">'+T("mo_cpo")+'</th><th class="val">'+T("mo_month")+'</th><th></th></tr></thead><tbody>'+o.ladder.map(function(x,i){return'<tr class="'+(i===best?"best":"")+'"><td class="mono">$'+x.b+'</td><td class="val">$'+nf(x.cpo,2)+'</td><td class="val">'+da(x.profit)+'</td><td>'+(i===best?T("pr_best"):"")+'</td></tr>'}).join("")+'</tbody></table></div></div>'}
+var DEF={name:"Example product",price:6900,cost:2900,pack:300,cc:150,courier:0,ret:200,cod:1,dmg:10,cpo:2,rate:240,cr:65,dr:70,target:100,budget:50,minp:800,b2:11900,b3:16900,tax:0,cpm:1.5,ctr:2,cvr:5,elast:1.5,pdrop:3,fixed:30000,rep:0,repn:1,infl:10,delay:7,stockd:10,tbudget:30,z1s:50,z1d:82,z1r:200,z2s:35,z2d:72,z2r:300,z3s:15,z3d:55,z3r:500,mcCr:12,mcDr:12,mcLo:0.8,mcHi:1.6};
+var LDEF={cny:28,qty:200,kg:0.4,cnyusd:0.14,fr:6,agent:5,duty:20,clear:20000,local:5000};
+var S=Object.assign({},DEF), LD=Object.assign({},LDEF), lang="en", tab="over", saved=[], theme="";
+var KEY="dzcod_sim_v1";
+function load(){try{var j=JSON.parse(localStorage.getItem(KEY)||"null");if(j){Object.assign(S,j.S||{});Object.assign(LD,j.LD||{});lang=j.lang||lang;saved=j.saved||[];theme=j.theme||"";}}catch(e){}
+ try{var q=new URLSearchParams(location.search).get("s");if(q){var o=JSON.parse(decodeURIComponent(escape(atob(q))));Object.assign(S,o.S||{});Object.assign(LD,o.LD||{});}}catch(e){}
+ applyTheme();}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify({S:S,LD:LD,lang:lang,saved:saved,theme:theme}));}catch(e){}}
+function applyTheme(){var r=document.documentElement;if(theme)r.setAttribute("data-theme",theme);else r.removeAttribute("data-theme");}
+function $(id){return document.getElementById(id)}
+function T(k){var s=(I[lang]&&I[lang][k]);if(s===undefined)s=I.en[k];if(s===undefined)s=k;for(var i=1;i<arguments.length;i++)s=s.replace("{"+(i-1)+"}",arguments[i]);return s}
+function nf(x,d){if(!isFinite(x))return"-";d=d||0;var r=Math.round(x*Math.pow(10,d))/Math.pow(10,d);var o=lang==="fr"?"fr-FR":"en-US";var s=new Intl.NumberFormat(o,{maximumFractionDigits:d,minimumFractionDigits:d}).format(r).replace(/[\u202f\u00a0]/g," ");return lang==="fr"?s:s.replace(/,/g," ")}
+function da(x){return nf(x)+" "+T("unit")}
+function pc(x,d){return nf(x*100,d||0)+"%"}
+function P(s,l){s=s||S;return{price:+s.price,cost:+s.cost,pack:+s.pack,cc:+s.cc,courier:+s.courier,ret:+s.ret,cod:+s.cod/100,dmg:+s.dmg/100,tax:+s.tax/100,cpo:+s.cpo,rate:+s.rate,cr:clamp(+s.cr/100,0.01,1),dr:clamp(+s.dr/100,0.01,1),target:Math.max(1,+s.target),minp:+s.minp,units:1}}
+var FIELDS=[["g_prod",[["name","text"],["price"],["cost","num","calc_land"],["pack"]]],
+["g_ops",[["cc"],["courier","num",null,"courier_h"],["ret"],["cod"],["dmg"],["tax"]]],
+["g_camp",[["cpo"],["rate"],["cr"],["dr"],["budget"]]],
+["g_goal",[["target"],["minp"]]]];
+function buildInputs(){var h="";FIELDS.forEach(function(g){h+='<h2 data-i="'+g[0]+'"></h2>';g[1].forEach(function(f){var id=f[0];
+ h+='<div class="f"><label for="in_'+id+'"><span data-i="'+id+'"></span>'+(f[3]?'<small data-i="'+f[3]+'"></small>':'')+(f[2]?'<small><button class="hint" data-go="land" data-i="'+f[2]+'"></button></small>':'')+'</label>'+
+ '<input id="in_'+id+'" type="'+(f[1]==="text"?"text":"number")+'" '+(f[1]==="text"?"":'inputmode="decimal" step="any" min="0"')+' value="'+S[id]+'"></div>'});});
+ $("inputs").innerHTML=h;
+ $("inputs").addEventListener("input",function(e){var id=e.target.id.replace("in_","");if(!(id in S))return;S[id]=e.target.type==="text"?e.target.value:(e.target.value===""?0:+e.target.value);persist();render();});
+ $("inputs").addEventListener("click",function(e){var g=e.target.getAttribute("data-go");if(g){tab=g;render();}});}
+function setInput(id,v){S[id]=v;var el=$("in_"+id);if(el)el.value=v;}
+var TABS=["over","land","fun","zone","price","bund","scen","sens","risk","cash","month","test","save"];
+var TAB_KEY={over:"t_over",land:"t_land",fun:"t_fun",zone:"t_zone",price:"t_price",bund:"t_bund",scen:"t_scen",sens:"t_sens",risk:"t_risk",cash:"t_cash",month:"t_month",test:"t_test",save:"t_save"};
+function applyI18n(){document.querySelectorAll("[data-i]").forEach(function(n){n.textContent=T(n.getAttribute("data-i"))});
+ document.documentElement.lang=lang;$("app").dir=lang==="ar"?"rtl":"ltr";
+ document.querySelectorAll(".lang button").forEach(function(b){b.setAttribute("aria-pressed",b.dataset.l===lang)});
+ $("tabs").innerHTML=TABS.map(function(t){return'<button role="tab" data-t="'+t+'" aria-selected="'+(t===tab)+'">'+T(TAB_KEY[t])+'</button>'}).join("");}
+function toast(msg){var t=$("toast");t.textContent=msg;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(function(){t.hidden=true},1800)}
+function copy(text,ok){function done(){toast(ok||T("sv_done"))}
+ function fb(){var ta=document.createElement("textarea");ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand("copy");done()}catch(e){}document.body.removeChild(ta)}
+ try{navigator.clipboard.writeText(text).then(done,fb)}catch(e){fb()}}
+function reasons(p,m,vd){var r=[];
+ if(m.net<=0)r.push(["bad",T("r_loss")]);else{var h=m.maxCpo/p.cpo-1;r.push([h<0.25?"warn":"good",h<0.25?T("r_tight",nf(h*100)):T("r_head",nf(h*100))]);}
+ r.push([vd.pess.net>0?"good":"bad",vd.pess.net>0?T("r_pess"):T("r_pessb")]);
+ if(p.dr<0.6)r.push(["warn",T("r_dr")]);
+ var cr=(p.cost+p.pack)/p.price;if(cr>0.4)r.push(["warn",T("r_cost",nf(cr*100))]);
+ if(m.perOrder<p.minp)r.push(["warn",T("r_minp")]);
+ return r}
+function seg(m){var ret=m.ret+m.lost,ship=m.cour+m.cod;return[["c_ads",m.ads,"--s1"],["c_prod",m.cogs,"--s2"],["c_cc",m.cc,"--s3"],["c_ret",ret,"--s5"],["c_ship",ship,"--s4"]]}
+function vOver(){var p=P(),m=model(p),vd=verdict(p,m),rs=reasons(p,m,vd);
+ var beDr=solveRate(p,"dr"),beCr=solveRate(p,"cr"),mc=mcRun();rs.push([mc.pProfit>=0.7?"good":"warn",T(mc.pProfit>=0.7?"r_risk":"r_risk_b",nf(mc.pProfit*100))]);
+ var h='<div class="verdict '+vd.v+'"><div class="vtag">'+T(vd.v)+'</div><div class="vtxt">'+T("v_"+vd.v)+'</div><div class="chips">'+rs.map(function(x){return'<span class="chip '+x[0]+'">'+x[1]+'</span>'}).join("")+'</div></div>';
+ h+='<div class="kpis"><div class="kpi"><div class="l">'+T("k_net")+'</div><div class="v'+(m.net<0?" neg":"")+'">'+da(m.net)+'</div><div class="n">'+T("k_from",nf(m.D))+'</div></div>'+
+ '<div class="kpi"><div class="l">'+T("k_unit")+'</div><div class="v'+(m.perOrder<0?" neg":"")+'">'+da(m.perOrder)+'</div></div>'+
+ '<div class="kpi"><div class="l">'+T("k_roi")+'</div><div class="v'+(m.roi<0?" neg":"")+'">'+pc(m.roi)+'</div><div class="n">'+T("k_margin")+' '+pc(m.margin)+'</div></div>'+
+ '<div class="kpi"><div class="l">'+T("k_chance")+'</div><div class="v">'+pc(mc.pProfit)+'</div><div class="n">'+T("k_chance_n")+'</div></div><div class="kpi"><div class="l">'+T("k_cap")+'</div><div class="v">'+da(m.capital)+'</div><div class="n">'+T("k_cap_n")+'</div></div></div>';
+ h+='<div class="card"><h3>'+T("be_t")+'</h3><div class="be">'+
+ '<div><div class="l">'+T("be_cpo")+'</div><div class="v">'+(m.maxCpo>0?"$"+nf(m.maxCpo,2):"-")+'</div><div class="n">'+T("be_cpo_n","$"+nf(p.cpo,2))+'</div></div>'+
+ '<div><div class="l">'+T("be_dr")+'</div><div class="v">'+(beDr===null?T("be_no"):pc(beDr))+'</div><div class="n">'+T("dr").split(" (")[0]+': '+pc(p.dr)+'</div></div>'+
+ '<div><div class="l">'+T("be_cr")+'</div><div class="v">'+(beCr===null?T("be_no"):pc(beCr))+'</div><div class="n">'+T("cr").split(" (")[0]+': '+pc(p.cr)+'</div></div>'+
+ '<div><div class="l">'+T("be_roas")+'</div><div class="v">'+(isFinite(m.beRoas)?nf(m.beRoas,2)+"x":"-")+'</div><div class="n">'+T("be_roas_n",nf(m.roas,2))+'</div></div></div></div>';
+ var sg=seg(m),tot=Math.max(m.rev,m.costs),loss=m.net<0;
+ var bar='<div class="stack" role="img" aria-label="'+T("cb_t")+'">'+sg.map(function(s){return'<i style="width:'+(s[1]/tot*100).toFixed(2)+'%;background:var('+s[2]+')"></i>'}).join("")+(loss?'':'<i style="width:'+(m.net/tot*100).toFixed(2)+'%;background:var(--s6)"></i>')+'</div>';
+ var lg='<div class="legend">'+sg.map(function(s){return'<span class="sw" style="background:var('+s[2]+')"></span><span>'+T(s[0])+'</span><span class="val">'+da(s[1])+'</span><span class="pc">'+pc(s[1]/tot,1)+'</span>'}).join("")+
+ '<span class="sw" style="background:'+(loss?'var(--bad)':'var(--s6)')+'"></span><span><b>'+(loss?T("c_loss"):T("c_profit"))+'</b></span><span class="val"><b>'+da(m.net)+'</b></span><span class="pc">'+pc(m.net/tot,1)+'</span>'+
+ '<span></span><span class="tot">'+T("c_total")+'</span><span class="val tot">'+da(m.rev)+'</span><span class="tot"></span></div>';
+ h+='<div class="card"><h3>'+T("cb_t")+'</h3>'+bar+lg+'</div>';
+ var fmax=m.L;function fr(k,v,c){return'<span>'+T(k)+'</span><span class="bar"><i style="width:'+(v/fmax*100).toFixed(1)+'%;background:var('+c+')"></i></span><span class="val">'+nf(v)+'</span>'}
+ var lpd=S.budget/p.cpo,dpd=lpd*p.cr*p.dr,ppd=dpd*m.perOrder;
+ h+='<div class="two"><div class="card"><h3>'+T("fun_t")+'</h3><div class="fun">'+fr("f_leads",m.L,"--s1")+fr("f_conf",m.C,"--s3")+fr("f_del",m.D,"--s6")+fr("f_ret",m.R,"--s5")+'</div></div>'+
+ '<div class="card"><h3>'+T("proj_t")+'</h3><div class="be" style="grid-template-columns:1fr 1fr"><div><div class="l">'+T("p_leads")+'</div><div class="v">'+nf(lpd,1)+'</div></div><div><div class="l">'+T("p_del")+'</div><div class="v">'+nf(dpd,1)+'</div></div>'+
+ '<div><div class="l">'+T("p_day")+'</div><div class="v">'+da(ppd)+'</div></div><div><div class="l">'+T("p_month")+'</div><div class="v">'+da(ppd*30)+'</div></div></div></div></div>';
+ return h}
+function fld(key,k,step){var a=key.split("."),v=(a[0]==="S"?S:LD)[a[1]];return'<div class="f"><label for="x_'+a[0]+a[1]+'">'+T(k)+'</label><input id="x_'+a[0]+a[1]+'" data-k="'+key+'" type="number" inputmode="decimal" step="'+(step||"any")+'" min="0" value="'+v+'"></div>'}
+function vLand(){var l=landed(LD,+S.rate),p=P(),ratio=l.total/p.price;
+ var rows=[["ld_goods",l.goods],["ld_agentr",l.agent],["ld_freight",l.freight],["ld_duty_r",l.duty],["ld_fixed",l.fixed]];
+ return'<div class="two"><div class="card"><h3>'+T("ld_t")+'</h3>'+fld("LD.cny","ld_cny")+fld("LD.qty","ld_qty")+fld("LD.kg","ld_kg")+fld("LD.cnyusd","ld_cnyusd")+fld("LD.fr","ld_fr")+fld("LD.agent","ld_agent")+fld("LD.duty","ld_duty")+fld("LD.clear","ld_clear")+fld("LD.local","ld_local")+'</div>'+
+ '<div class="card"><h3>'+T("ld_total")+'</h3><div class="big">'+da(l.total)+'</div><p class="note">'+T("ld_ratio",nf(ratio*100))+'</p><div class="legend" style="grid-template-columns:minmax(0,1fr) auto">'+rows.map(function(r){return'<span>'+T(r[0])+'</span><span class="val">'+da(r[1])+'</span>'}).join("")+'</div>'+
+ '<p><button class="btn" id="useLanded">'+T("ld_use")+'</button></p><p class="note">'+T("ld_n")+'</p></div></div>'}
+function vScen(){var p=P(),rows=["pess","base","opt"].map(function(n){var q=n==="base"?p:scenario(p,n),m=model(q),vv=verdict(q,m).v;return{n:n,q:q,m:m,v:vv}});
+ return'<div class="card"><h3>'+T("sc_t")+'</h3><div class="tw"><table><thead><tr><th></th><th class="val">'+T("sc_cr")+'</th><th class="val">'+T("sc_dr")+'</th><th class="val">'+T("sc_cpo")+'</th><th class="val">'+T("k_net")+'</th><th class="val">'+T("th_unit")+'</th><th class="val">ROI</th><th>'+T("th_v")+'</th></tr></thead><tbody>'+
+ rows.map(function(r){return'<tr><td><b>'+T("sc_"+r.n)+'</b></td><td class="val">'+pc(r.q.cr)+'</td><td class="val">'+pc(r.q.dr)+'</td><td class="val">$'+nf(r.q.cpo,2)+'</td><td class="val">'+da(r.m.net)+'</td><td class="val">'+da(r.m.perOrder)+'</td><td class="val">'+pc(r.m.roi)+'</td><td><span class="dot '+r.v+'"></span>'+T(r.v)+'</td></tr>'}).join("")+'</tbody></table></div><p class="note">'+T("sc_d")+'</p></div>'}
+function vSens(){var p=P(),drs=[0.4,0.5,0.6,0.7,0.8,0.9],fs=[0.5,0.75,1,1.25,1.5,2],ci=0,cj=0,bd=9;
+ drs.forEach(function(d,i){if(Math.abs(d-p.dr)<bd){bd=Math.abs(d-p.dr);ci=i}});
+ var h='<div class="card"><h3>'+T("se_t")+'</h3><div class="tw"><table class="heat"><thead><tr><th>'+T("se_dr")+'</th>'+fs.map(function(f){return'<th>$'+nf(p.cpo*f,2)+'</th>'}).join("")+'</tr></thead><tbody>';
+ var vals=[];drs.forEach(function(d){fs.forEach(function(f){var q=Object.assign({},p,{dr:d,cpo:p.cpo*f});vals.push(model(q).perOrder)})});
+ var mx=Math.max.apply(null,vals.map(Math.abs))||1;
+ drs.forEach(function(d,i){h+='<tr><th>'+pc(d)+'</th>';fs.forEach(function(f,j){var v=vals[i*fs.length+j],a=Math.min(60,Math.abs(v)/mx*60+6);
+  h+='<td class="'+(i===ci&&f===1?"cur":"")+'" style="background:color-mix(in srgb,var('+(v>=0?"--good":"--bad")+') '+a.toFixed(0)+'%,var(--surface))">'+nf(v)+'</td>'});h+='</tr>'});
+ return h+'</tbody></table></div><p class="note">'+T("se_d")+'</p></div>'}
+function vBund(){var p=P(),tiers=[[1,p.price],[2,+S.b2],[3,+S.b3]];
+ var rs=tiers.map(function(t){var q=Object.assign({},p,{units:t[0],price:t[1]}),m=model(q);return{u:t[0],pr:t[1],m:m,per100:m.netPerLead*100}});
+ var best=0;rs.forEach(function(r,i){if(r.per100>rs[best].per100)best=i});
+ return'<div class="card"><h3>'+T("bu_t")+'</h3><div class="tw"><table><thead><tr><th>'+T("bu_pieces")+'</th><th class="val">'+T("bu_price")+'</th><th class="val">'+T("bu_perorder")+'</th><th class="val">'+T("bu_per100")+'</th><th></th></tr></thead><tbody>'+
+ rs.map(function(r,i){return'<tr class="'+(i===best?"best":"")+'"><td><b>'+r.u+'</b></td><td class="val">'+(i===0?da(r.pr):'<input id="xS'+("b"+(i+1))+'" data-k="S.b'+(i+1)+'" type="number" inputmode="decimal" min="0" value="'+r.pr+'" style="width:110px">')+'</td><td class="val">'+da(r.m.perOrder)+'</td><td class="val">'+da(r.per100)+'</td><td>'+(i===best?T("bu_best"):"")+'</td></tr>'}).join("")+
+ '</tbody></table></div><p class="note">'+T("bu_d")+'</p></div>'}
+function vTest(){var p=P(),m=model(p),B=+S.budget,tb=+S.tbudget||0,leads=tb/p.cpo,conf=leads*p.cr,del=conf*p.dr,net=leads*m.netPerLead,ten=10/(p.cr*p.dr)*p.cpo;
+ return'<div class="card"><h3>'+T("te_t")+'</h3><div style="max-width:420px">'+fld("S.tbudget","te_budget")+'</div>'+
+ '<div class="be"><div><div class="l">'+T("te_leads")+'</div><div class="v">'+nf(leads,1)+'</div></div><div><div class="l">'+T("te_conf")+'</div><div class="v">'+nf(conf,1)+'</div></div><div><div class="l">'+T("te_del")+'</div><div class="v">'+nf(del,1)+'</div></div><div><div class="l">'+T("te_net")+'</div><div class="v" style="color:var('+(net>=0?"--good":"--bad")+')">'+da(net)+'</div></div><div><div class="l">'+T("te_ten")+'</div><div class="v">$'+nf(ten,0)+'</div></div></div>'+
+ '<p style="margin:16px 0 0"><b>'+T("te_kill","$"+nf(Math.max(0,m.maxCpo),2))+'</b></p><p class="note">'+T("te_kill2")+'</p></div>'}
+function summary(){var p=P(),m=model(p),vd=verdict(p,m),be=solveRate(p,"dr");
+ return[S.name+" - "+vd.v,"Price "+nf(p.price)+" DZD | cost "+nf(p.cost+p.pack)+" DZD | CPO $"+p.cpo+" | conf "+pc(p.cr)+" | delivery "+pc(p.dr),
+ "Net "+nf(m.net)+" DZD on "+m.D+" delivered | per order "+nf(m.perOrder)+" | ROI "+pc(m.roi)+" | margin "+pc(m.margin),"Max CPO $"+nf(m.maxCpo,2)+" | break-even ROAS "+nf(m.beRoas,2)+"x | min delivery rate "+(be===null?"n/a":pc(be))].join("\n")}
+function vSave(){var rows=saved.map(function(s,i){var p=P(s.S),m=model(p),vv=verdict(p,m).v;return'<tr><td><b>'+esc(s.S.name)+'</b></td><td class="val">'+nf(p.price)+'</td><td class="val">'+da(m.perOrder)+'</td><td class="val">'+pc(m.roi)+'</td><td><span class="dot '+vv+'"></span>'+T(vv)+'</td><td><button class="btn sm sec" data-load="'+i+'">'+T("sv_load")+'</button> <button class="btn sm sec" data-del="'+i+'">'+T("sv_del")+'</button></td></tr>'}).join("");
+ return'<div class="card"><h3>'+T("sv_t")+'</h3><div class="row" style="margin-bottom:12px"><button class="btn" id="svNow">'+T("sv_save")+'</button><button class="btn sec" id="svCsv">'+T("sv_csv")+'</button><button class="btn sec" id="svSum">'+T("sv_sum")+'</button><button class="btn sec" id="svJson">'+T("sv_json")+'</button></div>'+
+ (saved.length?'<div class="tw"><table><thead><tr><th>'+T("th_name")+'</th><th class="val">'+T("th_price")+'</th><th class="val">'+T("th_unit")+'</th><th class="val">'+T("th_roi")+'</th><th>'+T("th_v")+'</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<p class="note">'+T("sv_empty")+'</p>')+'</div>'+
+ '<div class="card"><h3>'+T("sv_imp")+'</h3><textarea id="impText" dir="ltr" placeholder="'+T("sv_paste")+'"></textarea><p><button class="btn" id="impBtn">'+T("sv_imp")+'</button></p></div>'}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function render(){applyI18n();var h={over:vOver,land:vLand,fun:vFun,zone:vZone,price:vPrice,bund:vBund,scen:vScen,sens:vSens,risk:vRisk,cash:vCash,month:vMonth,test:vTest,save:vSave}[tab]();$("view").innerHTML=h;bind();}
+function bind(){bindFields();var x;
+ x=$("useCpo");if(x)x.onclick=function(){var f=adFunnel({cpm:+S.cpm||0.01,ctr:+S.ctr||0.01,cvr:+S.cvr||0.01},1);setInput("cpo",Math.round(f.cpo*100)/100);persist();tab="over";render()};
+ x=$("applyZone");if(x)x.onclick=function(){var c=zoneCalc(P(),[[+S.z1s,+S.z1d,+S.z1r],[+S.z2s,+S.z2d,+S.z2r],[+S.z3s,+S.z3d,+S.z3r]]);setInput("dr",Math.round(c.dr*1000)/10);setInput("ret",Math.round(c.ret));persist();tab="over";render()};
+ var u=$("useLanded");if(u)u.onclick=function(){setInput("cost",Math.round(landed(LD,+S.rate).total));persist();tab="over";render();};
+ var sn=$("svNow");if(sn){sn.onclick=function(){saved.unshift({S:Object.assign({},S),LD:Object.assign({},LD)});saved=saved.slice(0,30);persist();render();toast(T("sv_saved"))};
+  $("svCsv").onclick=function(){var head="name,price,cost,packaging,conf_pct,delivery_pct,cpo_usd,profit_per_order,roi_pct,verdict";copy([head].concat(saved.map(function(s){var p=P(s.S),m=model(p);return[JSON.stringify(s.S.name),p.price,p.cost,p.pack,s.S.cr,s.S.dr,p.cpo,Math.round(m.perOrder),Math.round(m.roi*100),verdict(p,m).v].join(",")})).join("\n"))};
+  $("svSum").onclick=function(){copy(summary())};
+  $("svJson").onclick=function(){copy(JSON.stringify({S:S,LD:LD}))};
+  $("impBtn").onclick=function(){try{var j=JSON.parse($("impText").value);var s=j.S||j;Object.keys(DEF).forEach(function(k){if(k in s&&!isNaN(+s[k])||k==="name"&&s.name)S[k]=k==="name"?String(s.name):+s[k]});if(j.LD)Object.keys(LDEF).forEach(function(k){if(k in j.LD)LD[k]=+j.LD[k]});persist();Object.keys(S).forEach(function(k){var e=$("in_"+k);if(e)e.value=S[k]});tab="over";render()}catch(e){toast(T("sv_bad"))}};
+  document.querySelectorAll("[data-load]").forEach(function(b){b.onclick=function(){var s=saved[+b.dataset.load];Object.assign(S,s.S);Object.assign(LD,s.LD||{});persist();Object.keys(S).forEach(function(k){var e=$("in_"+k);if(e)e.value=S[k]});tab="over";render()}});
+  document.querySelectorAll("[data-del]").forEach(function(b){b.onclick=function(){saved.splice(+b.dataset.del,1);persist();render()}});}}
+function bindFields(){document.querySelectorAll("#view input[data-k]").forEach(function(el){el.oninput=function(){var a=el.dataset.k.split("."),id=el.id;(a[0]==="S"?S:LD)[a[1]]=el.value===""?0:+el.value;persist();render();var n=$(id);if(n){n.focus();try{n.setSelectionRange(n.value.length,n.value.length)}catch(e){}}}})}
+function init(){load();buildInputs();$("tabs").addEventListener("click",function(e){var t=e.target.getAttribute("data-t");if(t){tab=t;render();}});
+ document.querySelectorAll(".lang button").forEach(function(b){b.onclick=function(){lang=b.dataset.l;persist();render()}});render();}
+$("btnTheme").onclick=function(){var dark=document.documentElement.getAttribute("data-theme")==="dark"||(!document.documentElement.getAttribute("data-theme")&&matchMedia("(prefers-color-scheme: dark)").matches);theme=dark?"light":"dark";applyTheme();persist()};
+$("btnShare").onclick=function(){var u=location.origin+location.pathname+"?s="+btoa(unescape(encodeURIComponent(JSON.stringify({S:S,LD:LD}))));copy(u,T("copied_link"))};
+$("btnPrint").onclick=function(){try{window.print()}catch(e){}};
+init();
+</script>
